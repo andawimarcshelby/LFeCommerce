@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ReportPresetController;
-use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ScheduledReportController;
 
 // Authentication routes (public)
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -53,4 +53,26 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('/reports/presets/{id}', [ReportPresetController::class, 'destroy'])
         ->name('presets.delete');
+
+    // Scheduled reports (recurring exports)
+    Route::get('/reports/schedules', [ScheduledReportController::class, 'index'])
+        ->name('schedules.index');
+
+    Route::post('/reports/schedules', [ScheduledReportController::class, 'store'])
+        ->name('schedules.store');
+
+    Route::get('/reports/schedules/{schedule}', [ScheduledReportController::class, 'show'])
+        ->name('schedules.show');
+
+    Route::put('/reports/schedules/{schedule}', [ScheduledReportController::class, 'update'])
+        ->name('schedules.update');
+
+    Route::delete('/reports/schedules/{schedule}', [ScheduledReportController::class, 'destroy'])
+        ->name('schedules.delete');
+
+    Route::post('/reports/schedules/{schedule}/toggle', [ScheduledReportController::class, 'toggle'])
+        ->name('schedules.toggle');
+
+    Route::post('/reports/schedules/{schedule}/trigger', [ScheduledReportController::class, 'trigger'])
+        ->name('schedules.trigger');
 });
