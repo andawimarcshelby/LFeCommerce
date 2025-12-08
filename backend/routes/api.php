@@ -1,0 +1,56 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReportPresetController;
+use App\Http\Controllers\Api\AuthController;
+
+// Authentication routes (public)
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+
+// Protected routes (require authentication)
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+
+    // Report preview (fast, <500ms target)
+    Route::post('/reports/preview', [ReportController::class, 'preview'])
+        ->name('reports.preview');
+
+    // Export management
+    Route::post('/reports/exports', [ReportController::class, 'export'])
+        ->middleware('throttle:10,1') // 10 exports per minute
+        ->name('reports.export');
+
+    Route::get('/reports/exports', [ReportController::class, 'index'])
+        ->name('reports.index');
+
+    Route::get('/reports/exports/{id}', [ReportController::class, 'status'])
+        ->name('reports.status');
+
+    Route::delete('/reports/exports/{id}', [ReportController::class, 'destroy'])
+        ->name('reports.delete');
+
+    // Download with signed URL
+    Route::get('/reports/download', [ReportController::class, 'download'])
+        ->middleware('signed')
+        ->name('reports.download');
+
+    // Report presets (saved filters)
+    Route::get('/reports/presets', [ReportPresetController::class, 'index'])
+        ->name('presets.index');
+
+    Route::post('/reports/presets', [ReportPresetController::class, 'store'])
+        ->name('presets.store');
+
+    Route::get('/reports/presets/{id}', [ReportPresetController::class, 'show'])
+        ->name('presets.show');
+
+    Route::put('/reports/presets/{id}', [ReportPresetController::class, 'update'])
+        ->name('presets.update');
+
+    Route::delete('/reports/presets/{id}', [ReportPresetController::class, 'destroy'])
+        ->name('presets.delete');
+});

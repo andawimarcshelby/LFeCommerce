@@ -1,0 +1,207 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans antialiased;
+  }
+
+  * {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+
+  /* Buttons */
+  .btn {
+    @apply px-6 py-2.5 rounded-lg font-semibold transition-all duration-300 shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-[#799eff] to-[#5e8aff] text-white hover:from-[#5e8aff] hover:to-[#4f78f5] shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50;
+  }
+
+  .btn-success {
+    @apply bg-gradient-to-r from-green-600 to-green-700 text-white hover:from-green-700 hover:to-green-800;
+  }
+
+  .btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white rounded-2xl shadow-md border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300;
+  }
+
+  .card-header {
+    @apply flex justify-between items-center mb-4 pb-4 border-b border-gray-200;
+  }
+
+  .card-title {
+    @apply text-xl font-bold text-gray-800;
+  }
+
+  /* Form Inputs */
+  .input {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-[#799eff]/20 focus:border-[#799eff] outline-none transition-all bg-white;
+  }
+
+  .input-label {
+    @apply block text-sm font-semibold text-gray-700 mb-2;
+  }
+
+  .select {
+    @apply input appearance-none bg-white cursor-pointer;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800 border-2 border-green-200;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 border-2 border-yellow-200;
+  }
+
+  .badge-error {
+    @apply bg-red-100 text-red-800 border-2 border-red-200;
+  }
+
+  .badge-info {
+    @apply bg-blue-100 text-blue-800 border-2 border-blue-200;
+  }
+
+  .badge-purple {
+    @apply bg-purple-100 text-purple-800 border-2 border-purple-200;
+  }
+
+  /* Table */
+  .table-container {
+    @apply overflow-x-auto rounded-xl border-2 border-gray-200 shadow-sm;
+  }
+
+  .table {
+    @apply min-w-full divide-y-2 divide-gray-200;
+  }
+
+  .table-header {
+    @apply bg-gradient-to-r from-gray-50 to-gray-100;
+  }
+
+  .table-header-cell {
+    @apply px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider;
+  }
+
+  .table-row {
+    @apply hover:bg-[#feffc4]/30 transition-colors;
+  }
+
+  .table-cell {
+    @apply px-6 py-4 text-sm text-gray-900 whitespace-nowrap;
+  }
+
+  /* Progress Bars */
+  .progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-[#ffde63] to-[#ffbc4c] rounded-full transition-all duration-500 shadow-sm;
+  }
+
+  /* Stats Cards */
+  .stat-card {
+    @apply card bg-gradient-to-br p-6;
+  }
+
+  .stat-value {
+    @apply text-4xl font-extrabold mb-2;
+  }
+
+  .stat-label {
+    @apply text-sm font-medium opacity-90;
+  }
+
+  /* Loading States */
+  .skeleton {
+    @apply animate-pulse bg-gray-200 rounded;
+  }
+
+  .spinner {
+    @apply inline-block w-5 h-5 border-4 border-current border-t-transparent rounded-full animate-spin;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #799eff, #5e8aff);
+  border-radius: 10px;
+  border: 2px solid #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5e8aff, #4f78f5);
+}
+
+/* Smooth page transitions */
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 300ms ease-out;
+}
+
+/* University seal animation */
+@keyframes seal-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(121, 158, 255, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(121, 158, 255, 0.6);
+  }
+}
+
+.university-seal {
+  animation: seal-glow 3s ease-in-out infinite;
+}
+
+/* Gradient backgrounds for headers */
+.header-gradient {
+  background: linear-gradient(135deg, #4f78f5 0%, #799eff 50%, #ffde63 100%);
+}
+
+/* Toast container positioning */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 9999;
+}
