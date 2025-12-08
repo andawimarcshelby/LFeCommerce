@@ -205,3 +205,194 @@
   right: 20px;
   z-index: 9999;
 }
+
+/* Preset Components */
+.preset-selector {
+  @apply relative;
+}
+
+.preset-label {
+  @apply block text-sm font-semibold text-gray-700 mb-2;
+}
+
+.preset-dropdown {
+  @apply relative;
+}
+
+.preset-trigger {
+  @apply w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-lg hover:border-[#799eff] focus:ring-4 focus:ring-[#799eff]/20 focus:border-[#799eff] outline-none transition-all flex items-center justify-between cursor-pointer;
+}
+
+.preset-value {
+  @apply text-gray-900 font-medium;
+}
+
+.preset-icon {
+  @apply w-5 h-5 text-gray-500 transition-transform duration-200;
+}
+
+.preset-menu {
+  @apply absolute top-full left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto;
+}
+
+.preset-item {
+  @apply w-full px-4 py-3 text-left hover:bg-[#799eff]/10 border-b border-gray-100 last:border-b-0 transition-colors flex items-center justify-between cursor-pointer;
+}
+
+.preset-item.active {
+  @apply bg-[#799eff]/20;
+}
+
+.preset-item-empty {
+  @apply px-4 py-6 text-center text-gray-500 text-sm;
+}
+
+.preset-item-content {
+  @apply flex flex-col gap-1;
+}
+
+.preset-item-name {
+  @apply font-semibold text-gray-900;
+}
+
+.preset-item-type {
+  @apply text-xs text-gray-600 uppercase;
+}
+
+.preset-check {
+  @apply w-5 h-5 text-[#799eff];
+}
+
+.preset-backdrop {
+  @apply fixed inset-0 z-40;
+}
+
+/* Dialog Components */
+.dialog-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm;
+}
+
+.dialog-container {
+  @apply bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col;
+}
+
+.dialog-lg {
+  @apply max-w-2xl;
+}
+
+.dialog-header {
+  @apply flex items-center justify-between p-6 border-b-2 border-gray-200;
+}
+
+.dialog-title {
+  @apply text-2xl font-bold text-gray-900;
+}
+
+.dialog-close {
+  @apply p-2 hover:bg-gray-100 rounded-lg transition-colors;
+}
+
+.dialog-body {
+  @apply p-6 overflow-y-auto flex-1;
+}
+
+.dialog-footer {
+  @apply p-6 border-t-2 border-gray-200 flex justify-end gap-3;
+}
+
+.dialog-actions {
+  @apply flex justify-end gap-3 mt-6;
+}
+
+/* Form Components */
+.form-group {
+  @apply mb-6;
+}
+
+.form-label {
+  @apply block text-sm font-semibold text-gray-700 mb-2;
+}
+
+.form-input {
+  @apply w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-4 focus:ring-[#799eff]/20 focus:border-[#799eff] outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed;
+}
+
+.error-message {
+  @apply mt-4 p-3 bg-red-50 border-2 border-red-200 rounded-lg text-red-700 text-sm font-medium;
+}
+
+/* Preset Info */
+.preset-info {
+  @apply bg-gray-50 rounded-lg p-4 space-y-2 border-2 border-gray-200 mb-4;
+}
+
+.preset-info-item {
+  @apply flex items-center justify-between;
+}
+
+.preset-info-label {
+  @apply text-sm font-semibold text-gray-600;
+}
+
+.preset-info-value {
+  @apply text-sm font-medium text-gray-900;
+}
+
+/* Preset List */
+.preset-list {
+  @apply space-y-3;
+}
+
+.preset-list-item {
+  @apply bg-white border-2 border-gray-200 rounded-xl p-4 hover:border-[#799eff] transition-all flex items-center justify-between;
+}
+
+.preset-list-info {
+  @apply flex-1;
+}
+
+.preset-list-name {
+  @apply font-bold text-gray-900 mb-1;
+}
+
+.preset-list-meta {
+  @apply flex items-center gap-3;
+}
+
+.preset-badge {
+  @apply px-2 py-1 bg-[#799eff]/10 text-[#799eff] rounded text-xs font-bold uppercase;
+}
+
+.preset-date {
+  @apply text-xs text-gray-500;
+}
+
+.preset-list-actions {
+  @apply flex items-center gap-2;
+}
+
+/* Preset Edit */
+.preset-edit {
+  @apply flex-1 flex items-center gap-3;
+}
+
+.preset-edit-input {
+  @apply flex-1 px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-[#799eff]/20 focus:border-[#799eff] outline-none;
+}
+
+.preset-edit-actions {
+  @apply flex gap-2;
+}
+
+/* Button Variants */
+.btn-sm {
+  @apply px-4 py-2 text-sm;
+}
+
+.btn-icon {
+  @apply p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 hover:text-gray-900;
+}
+
+.btn-icon.btn-danger {
+  @apply hover:bg-red-50 hover:text-red-600;
+}
