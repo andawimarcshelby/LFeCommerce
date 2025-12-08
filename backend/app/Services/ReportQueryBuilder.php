@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use App\Models\CourseEvent;
 
@@ -71,7 +72,7 @@ class ReportQueryBuilder
     /**
      * Build query for summary report
      */
-    public function buildSummaryQuery(array $filters): Builder
+    public function buildSummaryQuery(array $filters): QueryBuilder
     {
         $query = DB::table('course_daily_activity')
             ->select([
@@ -114,7 +115,7 @@ class ReportQueryBuilder
     /**
      * Build query for top-N report
      */
-    public function buildTopNQuery(array $filters, string $type = 'students'): Builder
+    public function buildTopNQuery(array $filters, string $type = 'students'): QueryBuilder
     {
         if ($type === 'students') {
             return DB::table('student_course_engagement')
@@ -153,9 +154,185 @@ class ReportQueryBuilder
     }
 
     /**
+     * Build query for top students by activity
+     */
+    public function buildTopStudentsByActivityQuery(array $filters, int $limit = 100): QueryBuilder
+    {
+        $query = DB::table('course_events')
+            ->select([
+                'students.student_number',
+                'students.first_name',
+                'students.last_name',
+                'students.program',
+                'students.year_level',
+                DB::raw('COUNT(*) as total_events'),
+                DB::raw('COUNT(DISTINCT course_events.course_id) as courses_engaged'),
+                DB::raw('COUNT(DISTINCT DATE(course_events.occurred_at)) as active_days'),
+                DB::raw('ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) as rank')
+            ])
+            ->join('students', 'course_events.student_id', '=', 'students.id')
+            ->groupBy('students.id', 'students.student_number', 'students.first_name', 'students.last_name', 'students.program', 'students.year_level');
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->where('course_events.occurred_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('course_events.occurred_at', '<=', $filters['date_to']);
+        }
+
+        if (!empty($filters['term_ids'])) {
+            $query->whereIn('course_events.term_id', $filters['term_ids']);
+        }
+
+        if (!empty($filters['program'])) {
+            $query->where('students.program', $filters['program']);
+        }
+
+        return $query->orderBy('total_events', 'desc')->limit($limit);
+    }
+
+    /**
+     * Build query for top courses by engagement
+     */
+    public function buildTopCoursesByEngagementQuery(array $filters, int $limit = 50): QueryBuilder
+    {
+        $query = DB::table('course_events')
+            ->select([
+                'courses.course_code',
+                'courses.course_name',
+                'courses.department',
+                'courses.level',
+                'terms.name as term_name',
+                DB::raw('COUNT(*) as total_events'),
+                DB::raw('COUNT(DISTINCT course_events.student_id) as unique_students'),
+                DB::raw('COUNT(DISTINCT DATE(course_events.occurred_at)) as active_days'),
+                DB::raw('ROUND(COUNT(*) * 1.0 / NULLIF(COUNT(DISTINCT course_events.student_id), 0), 2) as avg_events_per_student'),
+                DB::raw('ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) as rank')
+            ])
+            ->join('courses', 'course_events.course_id', '=', 'courses.id')
+            ->join('terms', 'course_events.term_id', '=', 'terms.id')
+            ->groupBy('courses.id', 'courses.course_code', 'courses.course_name', 'courses.department', 'courses.level', 'terms.name');
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->where('course_events.occurred_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('course_events.occurred_at', '<=', $filters['date_to']);
+        }
+
+        if (!empty($filters['term_ids'])) {
+            $query->whereIn('course_events.term_id', $filters['term_ids']);
+        }
+
+        if (!empty($filters['department'])) {
+            $query->where('courses.department', $filters['department']);
+        }
+
+        return $query->orderBy('total_events', 'desc')->limit($limit);
+    }
+
+    /**
+     * Build query for late submissions report (exceptions)
+     */
+    public function buildLateSubmissionsQuery(array $filters, int $limit = 100): QueryBuilder
+    {
+        $query = DB::table('submissions')
+            ->select([
+                'students.student_number',
+                'students.first_name',
+                'students.last_name',
+                'courses.course_code',
+                'courses.course_name',
+                'assignments.title as assignment_title',
+                'assignments.due_date',
+                'submissions.submitted_at',
+                DB::raw('EXTRACT(EPOCH FROM (submissions.submitted_at - assignments.due_date)) / 3600 as hours_late'),
+                DB::raw('submissions.final_score'),
+                DB::raw('assignments.max_points'),
+                DB::raw('ROW_NUMBER() OVER (ORDER BY (submissions.submitted_at - assignments.due_date) DESC) as rank')
+            ])
+            ->join('students', 'submissions.student_id', '=', 'students.id')
+            ->join('assignments', 'submissions.assignment_id', '=', 'assignments.id')
+            ->join('courses', 'assignments.course_id', '=', 'courses.id')
+            ->whereRaw('submissions.submitted_at > assignments.due_date'); // Only late submissions
+
+        // Apply filters
+        if (!empty($filters['date_from'])) {
+            $query->where('submissions.submitted_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('submissions.submitted_at', '<=', $filters['date_to']);
+        }
+
+        if (!empty($filters['term_ids'])) {
+            $query->whereIn('assignments.term_id', $filters['term_ids']);
+        }
+
+        if (!empty($filters['course_ids'])) {
+            $query->whereIn('assignments.course_id', $filters['course_ids']);
+        }
+
+        // Order by how late they were (most late first)
+        return $query->orderByRaw('(submissions.submitted_at - assignments.due_date) DESC')->limit($limit);
+    }
+
+    /**
+     * Build query for inactive students report (exceptions)
+     */
+    public function buildInactiveStudentsQuery(array $filters, int $limit = 100): QueryBuilder
+    {
+        // Define "inactive" as students with low activity or no recent activity
+        $inactivityThreshold = $filters['inactivity_days'] ?? 14; // Days without activity
+        $thresholdDate = date('Y-m-d', strtotime("-{$inactivityThreshold} days"));
+
+        $query = DB::table('students')
+            ->select([
+                'students.student_number',
+                'students.first_name',
+                'students.last_name',
+                'students.program',
+                'students.year_level',
+                'students.email',
+                DB::raw('MAX(course_events.occurred_at) as last_activity_at'),
+                DB::raw('COUNT(course_events.id) as total_events'),
+                DB::raw('EXTRACT(DAY FROM (NOW() - MAX(course_events.occurred_at))) as days_since_last_activity'),
+                DB::raw('ROW_NUMBER() OVER (ORDER BY MAX(course_events.occurred_at) ASC NULLS FIRST) as rank')
+            ])
+            ->leftJoin('course_events', function ($join) use ($filters) {
+                $join->on('students.id', '=', 'course_events.student_id');
+                if (!empty($filters['term_ids'])) {
+                    $join->whereIn('course_events.term_id', $filters['term_ids']);
+                }
+            })
+            ->groupBy('students.id', 'students.student_number', 'students.first_name', 'students.last_name', 'students.program', 'students.year_level', 'students.email');
+
+        // Filter for truly inactive students
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            // Students who have less than minimum activity in the period
+            $minEvents = $filters['min_events'] ?? 5;
+            $query->havingRaw('COUNT(course_events.id) < ?', [$minEvents]);
+        } else {
+            // Students with no recent activity
+            $query->havingRaw('(MAX(course_events.occurred_at) < ? OR MAX(course_events.occurred_at) IS NULL)', [$thresholdDate]);
+        }
+
+        if (!empty($filters['program'])) {
+            $query->where('students.program', $filters['program']);
+        }
+
+        // Order by least active (oldest last activity or no activity)
+        return $query->orderByRaw('MAX(course_events.occurred_at) ASC NULLS FIRST')->limit($limit);
+    }
+
+    /**
      * Build query for per-student report
      */
-    public function buildPerStudentQuery(array $filters): Builder
+    public function buildPerStudentQuery(array $filters): QueryBuilder
     {
         $query = DB::table('students')
             ->select([

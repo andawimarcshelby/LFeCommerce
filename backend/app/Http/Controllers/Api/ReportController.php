@@ -28,11 +28,11 @@ class ReportController extends Controller
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 100);
 
-        // Build query
+        // Build query based on report type and sub-type
         $query = match ($validated['report_type']) {
             'detail' => $this->queryBuilder->buildCourseEventsQuery($validated['filters']),
             'summary' => $this->queryBuilder->buildSummaryQuery($validated['filters']),
-            'top_n' => $this->queryBuilder->buildTopNQuery($validated['filters'], 'students'),
+            'top_n' => $this->buildTopNQuery($validated['filters']),
             'per_student' => $this->queryBuilder->buildPerStudentQuery($validated['filters']),
         };
 
@@ -52,8 +52,26 @@ class ReportController extends Controller
             'meta' => [
                 'query_time_ms' => $queryTime,
                 'report_type' => $validated['report_type'],
+                'sub_type' => $validated['filters']['top_n_type'] ?? null,
             ],
         ]);
+    }
+
+    /**
+     * Helper to build Top-N query based on sub-type
+     */
+    private function buildTopNQuery(array $filters)
+    {
+        $topNType = $filters['top_n_type'] ?? 'top_students';
+        $limit = $filters['limit'] ?? 100;
+
+        return match ($topNType) {
+            'top_students' => $this->queryBuilder->buildTopStudentsByActivityQuery($filters, $limit),
+            'top_courses' => $this->queryBuilder->buildTopCoursesByEngagementQuery($filters, $limit),
+            'late_submissions' => $this->queryBuilder->buildLateSubmissionsQuery($filters, $limit),
+            'inactive_students' => $this->queryBuilder->buildInactiveStudentsQuery($filters, $limit),
+            default => $this->queryBuilder->buildTopStudentsByActivityQuery($filters, $limit),
+        };
     }
 
     /**
