@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+/frontend/dist
+/backend/public/hot
+/backend/public/storage
+/backend/storage/*.key
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Docker
+/docker/volumes/
+
+# Reports
+/backend/storage/app/exports/*
+!/backend/storage/app/exports/.gitkeep
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
