@@ -56,9 +56,11 @@ class GenerateReportJob implements ShouldQueue
             // Generate report based on format
             if ($format === 'pdf') {
                 $filePath = $this->generatePdf($reportJob, $reportService, $pdfService, $filters, $reportType);
+            } elseif ($format === 'xlsx' || $format === 'excel') {
+                $excelService = app(\App\Services\ExcelService::class);
+                $filePath = $this->generateExcel($reportJob, $reportService, $excelService, $filters, $reportType);
             } else {
-                // Excel generation (to be implemented in Milestone 6)
-                throw new \Exception('Excel generation not yet implemented');
+                throw new \Exception("Unsupported format: {$format}");
             }
 
             // Get file size
@@ -329,6 +331,118 @@ class GenerateReportJob implements ShouldQueue
     }
 
     /**
+     * Generate Excel report
+     */
+    private function generateExcel(
+        ReportJob $reportJob,
+        ReportService $reportService,
+        \App\Services\ExcelService $excelService,
+        array $filters,
+        string $reportType
+    ): string {
+        // Progress callback
+        $progressCallback = function ($processed) use ($reportJob) {
+            $reportJob->update([
+                'processed_rows' => $processed,
+                'current_section' => "Processing row $processed",
+            ]);
+        };
+
+        // Handle different report types
+        switch ($reportType) {
+            case 'detail':
+                return $this->generateDetailExcel($reportService, $excelService, $filters, $progressCallback);
+
+            case 'summary':
+                return $this->generateSummaryExcel($reportService, $excelService, $filters);
+
+            case 'top-n':
+                return $this->generateTopNExcel($reportService, $excelService, $filters);
+
+            case 'exceptions':
+                return $this->generateExceptionsExcel($reportService, $excelService, $filters);
+
+            default:
+                throw new \InvalidArgumentException("Unsupported report type: {$reportType}");
+        }
+    }
+
+    /**
+     * Generate detail report Excel
+     */
+    private function generateDetailExcel(
+        ReportService $reportService,
+        \App\Services\ExcelService $excelService,
+        array $filters,
+        callable $progressCallback
+    ): string {
+        $query = $reportService->buildOrderQuery($filters);
+
+        return $excelService->generateLargeExcel(
+            \App\Exports\DetailReportExport::class,
+            $query,
+            'detail',
+            $filters,
+            $progressCallback
+        );
+    }
+
+    /**
+     * Generate summary report Excel
+     */
+    private function generateSummaryExcel(
+        ReportService $reportService,
+        \App\Services\ExcelService $excelService,
+        array $filters
+    ): string {
+        $groupBy = $filters['group_by'] ?? 'date';
+        $data = $reportService->summaryReport($filters, $groupBy);
+
+        return $excelService->generateReport(
+            \App\Exports\SummaryReportExport::class,
+            ['data' => $data, 'groupBy' => $groupBy],
+            'summary'
+        );
+    }
+
+    /**
+     * Generate top-N report Excel
+     */
+    private function generateTopNExcel(
+        ReportService $reportService,
+        \App\Services\ExcelService $excelService,
+        array $filters
+    ): string {
+        $topType = $filters['top_type'] ?? 'customers';
+        $limit = $filters['limit'] ?? 100;
+        $data = $reportService->topNReport($filters, $topType, $limit);
+
+        return $excelService->generateReport(
+            \App\Exports\TopNReportExport::class,
+            ['data' => $data, 'topType' => $topType],
+            'top-n'
+        );
+    }
+
+    /**
+     * Generate exceptions report Excel
+     */
+    private function generateExceptionsExcel(
+        ReportService $reportService,
+        \App\Services\ExcelService $excelService,
+        array $filters
+    ): string {
+        $exceptionType = $filters['exception_type'] ?? 'failed_orders';
+        $data = $reportService->exceptionsReport($filters, $exceptionType);
+
+        return $excelService->generateReport(
+            \App\Exports\ExceptionsReportExport::class,
+            ['data' => $data, 'exceptionType' => $exceptionType],
+            'exceptions'
+        );
+    }
+
+    /**
      * Handle job failure (Laravel hook)
      */
     public function failed(\Throwable $exception): void
@@ -339,4 +453,5 @@ class GenerateReportJob implements ShouldQueue
             $this->handleFailure($reportJob, $exception);
         }
     }
+
 }
