@@ -12,6 +12,7 @@
         "laravel/tinker": "^2.9",
         "maatwebsite/excel": "^1.1",
         "predis/predis": "^3.3",
+        "setasign/fpdi": "2.6",
         "spatie/browsershot": "^5.1"
     },
     "require-dev": {

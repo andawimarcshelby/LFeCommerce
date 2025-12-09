@@ -101,7 +101,7 @@ class ReportService
     /**
      * Build base order query with filters
      */
-    private function buildOrderQuery(array $filters): Builder
+    public function buildOrderQuery(array $filters): Builder
     {
         $query = Order::query()
             ->with(['customer', 'region', 'lineItems.product']);
