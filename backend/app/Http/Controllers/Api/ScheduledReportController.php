@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ScheduledReport;
+use App\Jobs\GenerateReportExportJob;
+use App\Models\ReportJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -77,7 +79,7 @@ class ScheduledReportController extends Controller
         $schedule = new ScheduledReport($validator->validated());
         $schedule->user_id = $request->user()->id;
         $schedule->is_active = true;
-        
+
         // Calculate initial next run time
         $schedule->calculateNextRun();
         $schedule->save();
@@ -136,12 +138,12 @@ class ScheduledReportController extends Controller
         }
 
         $schedule->fill($validator->validated());
-        
+
         // Recalculate next run if schedule changed
         if ($request->hasAny(['frequency', 'scheduled_time', 'day_of_week', 'day_of_month', 'is_active'])) {
             $schedule->calculateNextRun();
         }
-        
+
         $schedule->save();
 
         return response()->json([
@@ -192,9 +194,6 @@ class ScheduledReportController extends Controller
      */
     public function trigger(Request $request, ScheduledReport $schedule): JsonResponse
     {
-        use App\Jobs\GenerateReportExportJob;
-        use App\Models\ReportJob;
-
         // Authorization
         if ($schedule->user_id !== $request->user()->id) {
             return response()->json(['error' => 'Unauthorized'], 403);

@@ -53,31 +53,53 @@ class GenerateReportExportJob implements ShouldQueue
         ExcelReportGenerator $excelGenerator
     ): void {
         try {
-            // Mark as running
-            $this->reportJob->update([
-                'status' => 'running',
-                'started_at' => now(),
-            ]);
+            // Check if we can resume from checkpoint
+            $resumeFrom = null;
+            if ($this->reportJob->canResume()) {
+                $resumeFrom = $this->reportJob->checkpoint_data;
+                Log::info("Resuming report export from checkpoint", [
+                    'job_id' => $this->reportJob->id,
+                    'checkpoint' => $resumeFrom,
+                ]);
+            } else {
+                // Mark as running (fresh start)
+                $this->reportJob->update([
+                    'status' => 'running',
+                    'started_at' => now(),
+                ]);
+            }
 
             Log::info("Starting report export", [
                 'job_id' => $this->reportJob->id,
                 'report_type' => $this->reportJob->report_type,
                 'format' => $this->reportJob->format,
+                'resume_from' => $resumeFrom,
             ]);
 
             // Build query based on report type
             $query = $this->buildQuery($queryBuilder);
 
-            // Count total rows
-            $totalRows = $query->count();
-            $this->reportJob->update(['total_rows' => $totalRows]);
+            // Count total rows (skip if resuming)
+            if (!$resumeFrom) {
+                $totalRows = $query->count();
+                $this->reportJob->update(['total_rows' => $totalRows]);
+            }
 
             // Fetch data
             $data = $query->limit(100000)->get()->toArray(); // Limit for safety
 
-            // Progress callback
+            // Progress callback with checkpoint saving
             $progressCallback = function ($processed, $total, $section) {
                 $this->reportJob->updateProgress($processed, $total, $section);
+
+                // Save checkpoint every 10% progress
+                if ($processed % max(1, intval($total / 10)) === 0) {
+                    $this->reportJob->saveCheckpoint([
+                        'processed_rows' => $processed,
+                        'current_section' => $section,
+                        'timestamp' => now()->toDateTimeString(),
+                    ]);
+                }
             };
 
             // Generate report based on format
@@ -86,13 +108,15 @@ class GenerateReportExportJob implements ShouldQueue
                 $query,
                 $pdfGenerator,
                 $excelGenerator,
-                $progressCallback
+                $progressCallback,
+                $resumeFrom
             );
 
             // Get file size
             $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
 
-            // Mark as completed
+            // Mark as completed and clear checkpoint
+            $this->reportJob->clearCheckpoint();
             $this->reportJob->markCompleted($filePath, $fileSize);
 
             Log::info("Report export completed", [
@@ -109,6 +133,14 @@ class GenerateReportExportJob implements ShouldQueue
                 'job_id' => $this->reportJob->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Save checkpoint on failure for retry
+            $this->reportJob->saveCheckpoint([
+                'last_error' => $e->getMessage(),
+                'failed_at' => now()->toDateTimeString(),
+                'processed_rows' => $this->reportJob->processed_rows,
+                'current_section' => $this->reportJob->current_section,
             ]);
 
             $this->reportJob->markFailed($e->getMessage());
@@ -141,7 +173,8 @@ class GenerateReportExportJob implements ShouldQueue
         $query,
         PdfReportGenerator $pdfGenerator,
         ExcelReportGenerator $excelGenerator,
-        callable $progressCallback
+        callable $progressCallback,
+        ?array $resumeFrom = null
     ): string {
         $metadata = [
             'title' => $this->getReportTitle(),

@@ -18,6 +18,8 @@ class ReportJob extends Model
         'processed_rows',
         'progress_percent',
         'current_section',
+        'checkpoint_data',
+        'retry_count',
         'file_path',
         'file_size_bytes',
         'download_url',
@@ -29,15 +31,56 @@ class ReportJob extends Model
 
     protected $casts = [
         'filters' => 'array',
+        'checkpoint_data' => 'array',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 
     /**
+     * Relationships
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Save checkpoint state for resumption
+     */
+    public function saveCheckpoint(array $data): void
+    {
+        $this->update([
+            'checkpoint_data' => $data,
+            'retry_count' => $this->retry_count + 1,
+        ]);
+    }
+
+    /**
+     * Check if job can be resumed from checkpoint
+     */
+    public function canResume(): bool
+    {
+        return $this->status === 'running'
+            && !empty($this->checkpoint_data)
+            && $this->retry_count < 5;
+    }
+
+    /**
+     * Clear checkpoint data
+     */
+    public function clearCheckpoint(): void
+    {
+        $this->update([
+            'checkpoint_data' => null,
+        ]);
+    }
+
+
+    /**
      * Update job progress
      */
-    public function updateProgress(int $processed, int $total, string $section = null): void
+    public function updateProgress(int $processed, int $total, ?string $section = null): void
     {
         $this->update([
             'processed_rows' => $processed,
@@ -80,7 +123,7 @@ class ReportJob extends Model
     /**
      * Generate signed download URL
      */
-    public function generateSignedUrl(string $filePath = null): string
+    public function generateSignedUrl(?string $filePath = null): string
     {
         $path = $filePath ?? $this->file_path;
 
