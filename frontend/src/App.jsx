@@ -1,9 +1,12 @@
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useToast } from './contexts/ToastContext'
+import ErrorBoundary from './components/ErrorBoundary'
+import { PageLoader } from './components/LoadingSpinner'
 import Dashboard from './pages/Dashboard'
 import ReportPreview from './pages/ReportPreview'
 import ExportCenter from './pages/ExportCenter'
+import AdminExportCenter from './pages/AdminExportCenter'
 import Login from './pages/Login'
 
 function App() {
@@ -12,14 +15,7 @@ function App() {
     const toast = useToast()
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-100 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    <p className="mt-4 text-gray-600 font-medium">Loading...</p>
-                </div>
-            </div>
-        )
+        return <PageLoader message="Initializing application..." />
     }
 
     if (!user) {
@@ -72,6 +68,15 @@ function App() {
                                 </svg>
                                 Export Center
                             </NavLink>
+                            {/* Admin Link - Show for admin/viewer roles */}
+                            {(user?.roles?.includes('admin') || user?.roles?.includes('viewer')) && (
+                                <NavLink to="/admin/exports" active={location.pathname === '/admin/exports'}>
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
+                                    Admin
+                                </NavLink>
+                            )}
                         </div>
 
                         {/* User Menu */}
@@ -98,11 +103,14 @@ function App() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/reports" element={<ReportPreview />} />
-                    <Route path="/exports" element={<ExportCenter />} />
-                </Routes>
+                <ErrorBoundary>
+                    <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/reports" element={<ReportPreview />} />
+                        <Route path="/exports" element={<ExportCenter />} />
+                        <Route path="/admin/exports" element={<AdminExportCenter />} />
+                    </Routes>
+                </ErrorBoundary>
             </main>
 
             {/* Footer */}

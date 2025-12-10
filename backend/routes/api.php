@@ -28,6 +28,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/exports', [ReportController::class, 'index'])
         ->name('reports.index');
 
+    // Admin endpoint - get all users' exports
+    Route::get('/reports/exports/admin', [ReportController::class, 'adminIndex'])
+        ->name('reports.admin-index');
+
     Route::get('/reports/exports/{id}', [ReportController::class, 'status'])
         ->name('reports.status');
 

@@ -165,6 +165,50 @@ class ReportController extends Controller
     }
 
     /**
+     * List all export jobs (admin only)
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        // Check if user has admin or viewer role
+        if (!$request->user()->hasAnyRole(['admin', 'viewer'])) {
+            return response()->json([
+                'message' => 'Unauthorized. Admin or viewer role required.'
+            ], 403);
+        }
+
+        $query = ReportJob::with('user:id,name,email')
+            ->orderBy('created_at', 'desc');
+
+        // Apply filters
+        if ($request->has('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('user_id') && $request->user_id) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->has('format') && $request->format !== 'all') {
+            $query->where('format', $request->format);
+        }
+
+        if ($request->has('search') && $request->search) {
+            $query->where('report_type', 'like', '%' . $request->search . '%');
+        }
+
+        $jobs = $query->paginate(50);
+
+        return response()->json([
+            'data' => $jobs->items(),
+            'meta' => [
+                'current_page' => $jobs->currentPage(),
+                'last_page' => $jobs->lastPage(),
+                'total' => $jobs->total(),
+            ]
+        ]);
+    }
+
+    /**
      * Delete/cancel export job
      */
     public function destroy(string $id): JsonResponse
