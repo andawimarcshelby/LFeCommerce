@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard'
 import ReportPreview from './pages/ReportPreview'
 import ExportCenter from './pages/ExportCenter'
 import AdminExportCenter from './pages/AdminExportCenter'
+import AuditLogViewer from './pages/AuditLogViewer'
 import Login from './pages/Login'
 
 function App() {
@@ -109,6 +110,7 @@ function App() {
                         <Route path="/reports" element={<ReportPreview />} />
                         <Route path="/exports" element={<ExportCenter />} />
                         <Route path="/admin/exports" element={<AdminExportCenter />} />
+                        <Route path="/admin/audit" element={<AuditLogViewer />} />
                     </Routes>
                 </ErrorBoundary>
             </main>
