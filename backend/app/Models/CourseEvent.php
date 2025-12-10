@@ -9,6 +9,9 @@ class CourseEvent extends Model
 {
     protected $table = 'course_events';
 
+    // Disable Laravel timestamps since we only have created_at in DB
+    public $timestamps = false;
+
     protected $fillable = [
         'event_type',
         'student_id',
